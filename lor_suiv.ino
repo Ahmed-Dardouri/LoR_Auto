@@ -13,7 +13,8 @@ Servo myServo;
 Encoder myEnc1(21, 20);
 Encoder myEnc2(18, 19);
 
-#define TPR 374
+#define TPR 374 //Ticks Per Round
+#define whiteDist 280 //15cm of ticks
 
 #define Kp 0.01//0.09 //0.68
 // experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
@@ -44,6 +45,8 @@ unsigned int sensors [8];
 #define in1 A5
 #define in2 A6
 
+#define sigCount 3
+
 int taskCount;
 
 long oldPos1;
@@ -52,9 +55,14 @@ long oldPos2;
 long newPos1;
 long newPos2;
 
+int signals[sigCount];
+int sigPins[sigCount];
 
 void setup() {
-
+  sigPins[0] = 20;
+  sigPins[1] = 18;
+  sigPins[2] = 16;
+  
   //encoders setup
   oldPos1 = -999;
   oldPos2 = -999;
@@ -62,10 +70,7 @@ void setup() {
   //servo setup
   myServo.attach(SERVO_PIN);
   myServo.writeMicroseconds(STOP); 
-  /*
-    myServo.writeMicroseconds(CW); for clockwise
-    myServo.writeMicroseconds(CCW); for counter clockwise
-  */
+
   //serial setup
   Serial.begin(9600);
 
@@ -90,7 +95,7 @@ void setup() {
   Serial.println();
 
 
-  for (int i = 0 ; i < 120; i++){
+  for (int i = 0 ; i < 150; i++){
     qtrrc.calibrate();
     delay(20);
   }
@@ -100,7 +105,37 @@ void setup() {
 }
 
 void loop() {
-  
+  if(taskCount == 0){
+    start();
+  }else if(taskCount == 1){
+    waitPass();
+  }else if(taskCount == 2){
+    firstblue();
+  }else if(taskCount == 3){
+    firstLeft();
+  }else if(taskCount == 4){
+    secondLeft();
+  }else if(taskCount == 5){
+    secondBlue();
+  }else if(taskCount == 6){
+    firstRight();
+  }else if(taskCount == 7){
+    thirdBlue();
+  }else if(taskCount == 8){
+    unload();
+  }else if(taskCount == 9){
+    thirdLeft();
+  }else if(taskCount == 10){
+    fourthLeft();
+  }else if(taskCount == 11){
+    fifthLeft();
+  }else if(taskCount == 12){
+    waitCar();
+  }else if(taskCount == 13){
+    lastLeft();
+  }else if(taskCount == 14){
+    finish();
+  }
 }
 
 void  forwardPID(){
@@ -130,6 +165,43 @@ void  forwardPID(){
 }
 
 void start(){
+  readSigs();
+  if(signals[0] == 1){
+    stp();
+    signals[0] = 0;
+    openContainer(200);
+    delay(7000);
+    closeContainer(200);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void waitPass(){
+  bool cond;
+  if(cond){
+    stp();
+    delay(3000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void firstblue(){
+  readSigs();
+  if(signals[1] == 1){
+    stp();
+    signals[1] = 0;
+    delay(2000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void firstLeft(){
   bool cond;
   if(cond){
     /**/
@@ -138,15 +210,127 @@ void start(){
     forwardPID();
   }
 }
-void wait(){
+
+void secondLeft(){
   bool cond;
   if(cond){
     /**/
     taskCount++;
   }else{
-    delay(1);
+    forwardPID();
   }
 }
+
+void secondBlue(){
+  readSigs();
+  if(signals[1] == 1){
+    stp();
+    signals[1] = 0;
+    delay(2000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void firstRight(){
+  bool cond;
+  if(cond){
+    /**/
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void thirdBlue(){
+  readSigs();
+  if(signals[1] == 1){
+    stp();
+    signals[1] = 0;
+    delay(2000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void unload(){
+  readSigs();
+  if(signals[2] == 1){
+    stp();
+    signals[2] = 0;
+    openContainer(1000);
+    delay(6000);
+    closeContainer(1000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void thirdLeft(){
+  bool cond;
+  if(cond){
+    /**/
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void fourthLeft(){
+  bool cond;
+  if(cond){
+    /**/
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void fifthLeft(){
+  bool cond;
+  if(cond){
+    /**/
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void waitCar(){
+  bool cond;
+  if(cond){
+    stp();
+    delay(3000);
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+
+void lastLeft(){
+  bool cond;
+  if(cond){
+    /**/
+    taskCount++;
+  }else{
+    forwardPID();
+  }
+}
+
+void finish(){
+  bool cond;
+  if(cond){
+    stp();
+    delay(30000);
+  }else{
+    forwardPID();
+  }
+}
+
 
 void openContainer(int deg){
   myServo.writeMicroseconds(CW);
@@ -156,14 +340,6 @@ void openContainer(int deg){
 void closeContainer(int deg){
   myServo.writeMicroseconds(CCW);
   delay(deg);
-}
-
-void setSig(int * s){
-  *s = 1;
-}
-
-void resetSig(int * s){
-  *s = 0;
 }
 
 bool checkSig(int pin){
@@ -178,6 +354,22 @@ bool checkSig(int pin){
     return true;
   }else{
     return false;
+  }
+}
+
+int readOneSig(int pin){
+  if(digitalRead(pin)){
+    bool ok = checkSig(pin);
+    if (ok){
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void readSigs(){
+  for(int i = 0; i < sigCount; i++){
+    signals[i] = readOneSig(sigPins[i]);
   }
 }
 
@@ -219,4 +411,22 @@ void rights(){
   digitalWrite(in3, LOW);
   digitalWrite(in2, LOW);
   digitalWrite(in4, LOW);
+}
+
+void stp(){
+  analogWrite(ena,0);
+  analogWrite(enb,0);
+  digitalWrite(in1, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in4, LOW);
+}
+void stpDelay(int a){
+  analogWrite(ena,0);
+  analogWrite(enb,0);
+  digitalWrite(in1, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in4, LOW);
+  delay(a);
 }
